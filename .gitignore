@@ -1,0 +1,6 @@
+# ディレクトリを指定する場合
+node_modules/
+
+# gulp taskによって生成されるフォルダは管理対象外
+public/production/
+public/development/
