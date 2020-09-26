@@ -1,4 +1,5 @@
 var { CONNECTION_URL, OPTIONS, DATABSE } = require("../config/mongodb.config");
+var { authenticate, authorize } = require("../lib/security/accountcontrol.js");
 var router = require("express").Router();
 var MongoClient = require("mongodb").MongoClient;
 var tokens = new require("csrf")();
@@ -46,13 +47,27 @@ var createRegistData = function (body) {
   };
 };
 
-// HOME
-router.get("/", (req, res) => {
+// Show home page
+router.get("/", authorize("readWrite"), (req, res) => {
   res.render("./account/index.ejs");
 });
 
-// ACCOUNT
-router.get("/posts/regist", (req, res) => {
+// Show Login page
+router.get("/login", (req, res) => {
+  res.render("./account/login.ejs", { message: req.flash("message") });
+});
+
+// Authenticate login user
+router.post("/login", authenticate());
+
+// Logout
+router.post("/logout", (req, res) => {
+  req.logout();
+  res.redirect("/account/login");
+});
+
+// Show Account page
+router.get("/posts/regist", authorize("readWrite"), (req, res) => {
   tokens.secret((error, secret) => {
     var token = tokens.create(secret);
     req.session._csrf = secret;
@@ -61,14 +76,14 @@ router.get("/posts/regist", (req, res) => {
   });
 });
 
-// confirm posted data
-router.post("/posts/regist/input", (req, res) => {
+// Confirm posted data
+router.post("/posts/regist/input", authorize("readWrite"), (req, res) => {
   var original = createRegistData(req.body);
   res.render("./account/posts/regist-form.ejs", { original });
 });
 
-// register 
-router.post("/posts/regist/confirm", (req, res) => {
+// Show article confirmation page
+router.post("/posts/regist/confirm", authorize("readWrite"), (req, res) => {
   var original = createRegistData(req.body);
   var errors = validateRegistData(req.body);
   if (errors) {
@@ -78,8 +93,8 @@ router.post("/posts/regist/confirm", (req, res) => {
   res.render("./account/posts/regist-confirm.ejs", { original });
 });
 
-// REGISTER 
-router.post("/posts/regist/execute", (req, res) => {
+// Register an article
+router.post("/posts/regist/execute", authorize("readWrite"), (req, res) => {
   var secret = req.session._csrf;
   var token = req.cookies._csrf;
 
@@ -103,7 +118,7 @@ router.post("/posts/regist/execute", (req, res) => {
         delete req.session._csrf;
         res.clearCookie("_csrf");
 
-        // 再送信防止のため、登録完了後は登録完了画面へのリダイレクトを行う
+        // To avoid resend article registration request, redirect article registeration complete page
         res.redirect("/account/posts/regist/complete");
       }).catch((error) => {
         throw error;
@@ -113,8 +128,8 @@ router.post("/posts/regist/execute", (req, res) => {
   });
 });
 
-// 
-router.get("/posts/regist/complete", (req, res) => {
+// Show article registration completed page
+router.get("/posts/regist/complete", authorize("readWrite"), (req, res) => {
   res.render("./account/posts/regist-complete.ejs");
 });
 
