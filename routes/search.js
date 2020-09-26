@@ -1,8 +1,9 @@
 var { CONNECTION_URL, OPTIONS, DATABSE } = require("../config/mongodb.config.js");
-var { MAX_ITEM_PER_PAGE } = require("../config/app.config.js").search;
+var { MAX_ITEMS_PER_PAGE } = require("../config/app.config.js").search;
 var router = require("express").Router();
 var MongoClient = require("mongodb").MongoClient;
 
+// search book 
 router.get("/*", (req, res) => {
   var page = req.query.page ? parseInt(req.query.page) : 1;
   var keyword = req.query.keyword || "";
@@ -22,8 +23,8 @@ router.get("/*", (req, res) => {
       db.collection("posts")
         .find(query)
         .sort({ published: -1 })
-        .skip((page - 1) * MAX_ITEM_PER_PAGE)
-        .limit(MAX_ITEM_PER_PAGE)
+        .skip((page - 1) * MAX_ITEMS_PER_PAGE)
+        .limit(MAX_ITEMS_PER_PAGE)
         .toArray()
     ]).then((results) => {
       var data = {
@@ -31,7 +32,7 @@ router.get("/*", (req, res) => {
         count: results[0],
         list: results[1],
         pagination: {
-          max: Math.ceil(results[0] / MAX_ITEM_PER_PAGE),
+          max: Math.ceil(results[0] / MAX_ITEMS_PER_PAGE),
           current: page
         }
       };

@@ -1,5 +1,8 @@
 module.exports = {
+  security: {
+    SESSION_SECRET: "YOUR-SESSION-SECRET-STRING"
+  },
   search: {
-    MAX_ITEM_PER_PAGE: 2
+    MAX_ITEMS_PER_PAGE: 10
   }
 };
