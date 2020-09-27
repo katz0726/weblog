@@ -35,12 +35,62 @@ app.use(flash());
 app.use(...accountcontrol.initialize());
 
 // Application Routing Settings
-app.use("/", require("./routes/index.js"));
-app.use("/posts/", require("./routes/posts.js"));
-app.use("/search/", require("./routes/search.js"));
-app.use("/account/", require("./routes/account.js"));
+app.use("/api", (() => {
+  var router = express.Router();
+  router.use("/posts", require("./api/posts.js"));
+  return router;
+})());
+app.use("/", (() => {
+  var router = express.Router();
+  router.use((req, res, next) => {
+    // click jacking measures
+    res.setHeader("X-Frame-Options", "SAMEORIGIN");
+    next();
+  });
+  router.use("/posts/", require("./routes/posts.js"));
+  router.use("/search/", require("./routes/search.js"));
+  router.use("/account/", require("./routes/account.js"));
+  router.use("/", require("./routes/index.js"));
+  return router;
+})());
 
 // output system log
 app.use(systemlogger());
+
+/** In respond to HTTP status code, show error page */
+app.use((req, res, next) => {
+  var data = {
+    method: req.method,
+    protocol: req.protocol,
+    version: req.httpVersion,
+    url: req.url
+  };
+  res.status(404);
+  if (req.xhr) {
+    res.json(data);
+  } else {
+    res.render("./404.ejs", { data });
+  }
+});
+
+app.use((err, req, res, next) => {
+  var data = {
+    method: req.method,
+    protocol: req.protocol,
+    version: req.httpVersion,
+    url: req.url,
+    error: (process.env.NODE_ENV === "development") ? {
+      name: err.name,
+      message: err.message,
+      stack: err.stack
+    } : undefined
+  };
+  res.status(500);
+  if (req.xhr) {
+    res.json(data);
+  } else {
+    res.render("./500.ejs", { data });
+  }
+});
 
 app.listen(PORT);
